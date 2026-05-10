@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name='Название') 
@@ -28,7 +29,21 @@ class Product(models.Model):
         verbose_name_plural = 'Товары'
 
 class Review(models.Model):
-    pass 
+    RATING_CHOICES = [ (1, 'Очень плохо'), (2, 'Плохо'), (3, 'Нормально'), (4, 'Хорошо'), (5, 'Отлично') ]
+    
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews', verbose_name='Товар')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
+    rating = models.IntegerField(choices=RATING_CHOICES, verbose_name='Оценка')
+    text = models.TextField(verbose_name='Комментарий')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+
+    def __str__(self):
+        return f'{self.author} - {self.product} {self.rating}★'
+    
+    class Meta:
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
+        unique_together = ('product', 'author')
 
 class Order(models.Model):
     pass 
