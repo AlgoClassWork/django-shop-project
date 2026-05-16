@@ -24,6 +24,11 @@ class Product(models.Model):
     def __str__(self):
         return self.name
     
+    def avg_rating(self):
+        reviews = self.reviews.all()
+        if reviews:
+            return sum( rate.rating for rate in reviews ) / len(reviews)
+    
     class Meta:
         verbose_name = 'Товар'
         verbose_name_plural = 'Товары'
@@ -46,7 +51,30 @@ class Review(models.Model):
         unique_together = ('product', 'author')
 
 class Order(models.Model):
-    pass 
+    STATUS_CHOICES = [('new', 'Новый'), ('processing', 'В обработке'),
+                      ('shipped', 'Отправлен'), ('delivered', 'Доставлен')]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', verbose_name='Пользователь')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new', verbose_name='Статус')
+    address = models.CharField(max_length=200, verbose_name='Адрес')
+    total_price = models.DecimalField(max_digits=10, decimal_places=2 ,verbose_name='Итоговая цена')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+
+    def __str__(self):
+        return f'Заказ #{self.id} от {self.user}'
+    
+    class Meta:
+        verbose_name = 'Заказ'
+        verbose_name_plural = 'Заказы'
 
 class OrderItem(models.Model):
-    pass
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items', verbose_name='Заказ')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, verbose_name='Товар')
+    quantity = models.PositiveIntegerField(default=1, verbose_name='Кол-во')
+    price = models.DecimalField(max_digits=10, decimal_places=2 ,verbose_name='Цена')
+
+    def __str__(self):
+        return f'{self.product} x{self.quantity}'
+    
+    def total(self):
+        return self.price * self.quantity
