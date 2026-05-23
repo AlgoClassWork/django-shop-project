@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Оформление заказа{% endblock %}
+
+{% block content %}
+<h1>Оформление заказа</h1>
+<div style="display:flex; gap:30px; flex-wrap:wrap;">
+    <div style="flex:1; min-width:250px;">
+        <div class="card">
+            <h3>Ваш заказ</h3>
+            <table>
+                <thead>
+                    <tr><th>Товар</th><th>Кол-во</th><th>Сумма</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.product.name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.subtotal }} ₽</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div style="text-align:right; margin-top:10px; font-size:18px;">
+                Итого: <strong>{{ total }} ₽</strong>
+            </div>
+        </div>
+    </div>
+    <div style="flex:1; min-width:250px;">
+        <div class="card">
+            <h3>Адрес доставки</h3>
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="form-group">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.errors %}<div class="form-error">{{ field.errors }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:10px;">✔ Подтвердить заказ</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

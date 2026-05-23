@@ -1,80 +1,92 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+
 class Category(models.Model):
-    name = models.CharField(max_length=100, verbose_name='Название') 
-    slug = models.SlugField(unique=True, verbose_name='Слаг') 
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True)
 
     def __str__(self):
         return self.name
-    
+
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
 
+
 class Product(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products', verbose_name='Категория')
-    name = models.CharField(max_length=100, verbose_name='Название')
-    description = models.TextField(verbose_name='Описание')
-    price = models.DecimalField(max_digits=10, decimal_places=2 ,verbose_name='Цена')
-    image = models.ImageField(upload_to='products/', null=True, blank=True, verbose_name='Изображение')
-    stock = models.PositiveIntegerField(default=0, verbose_name='Количество')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    image = models.ImageField(upload_to='products/', null=True, blank=True)
+    stock = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
-    
+
     def avg_rating(self):
         reviews = self.reviews.all()
         if reviews:
-            return sum( rate.rating for rate in reviews ) / len(reviews)
-    
+            return round(sum(r.rating for r in reviews) / len(reviews), 1)
+        return None
+
     class Meta:
         verbose_name = 'Товар'
         verbose_name_plural = 'Товары'
+        ordering = ['-created_at']
+
 
 class Review(models.Model):
-    RATING_CHOICES = [ (1, 'Очень плохо'), (2, 'Плохо'), (3, 'Нормально'), (4, 'Хорошо'), (5, 'Отлично') ]
-    
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews', verbose_name='Товар')
-    author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
-    rating = models.IntegerField(choices=RATING_CHOICES, verbose_name='Оценка')
-    text = models.TextField(verbose_name='Комментарий')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
 
-    def __str__(self):
-        return f'{self.author} - {self.product} {self.rating}★'
-    
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating = models.IntegerField(choices=RATING_CHOICES)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
     class Meta:
+        unique_together = ('product', 'author')
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
-        unique_together = ('product', 'author')
-
-class Order(models.Model):
-    STATUS_CHOICES = [('new', 'Новый'), ('processing', 'В обработке'),
-                      ('shipped', 'Отправлен'), ('delivered', 'Доставлен')]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', verbose_name='Пользователь')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new', verbose_name='Статус')
-    address = models.CharField(max_length=200, verbose_name='Адрес')
-    total_price = models.DecimalField(max_digits=10, decimal_places=2 ,verbose_name='Итоговая цена')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
 
     def __str__(self):
-        return f'Заказ #{self.id} от {self.user}'
-    
+        return f"{self.author} — {self.product} ({self.rating}★)"
+
+
+class Order(models.Model):
+    STATUS_CHOICES = [
+        ('new', 'Новый'),
+        ('processing', 'В обработке'),
+        ('shipped', 'Отправлен'),
+        ('delivered', 'Доставлен'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
+    address = models.CharField(max_length=300)
+    created_at = models.DateTimeField(auto_now_add=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"Заказ #{self.pk} от {self.user}"
+
     class Meta:
         verbose_name = 'Заказ'
         verbose_name_plural = 'Заказы'
+        ordering = ['-created_at']
+
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items', verbose_name='Заказ')
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, verbose_name='Товар')
-    quantity = models.PositiveIntegerField(default=1, verbose_name='Кол-во')
-    price = models.DecimalField(max_digits=10, decimal_places=2 ,verbose_name='Цена')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    quantity = models.PositiveIntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
-        return f'{self.product} x{self.quantity}'
-    
+        return f"{self.product} x{self.quantity}"
+
     def total(self):
         return self.price * self.quantity

@@ -1,5 +1,25 @@
-<form method="post">
-    {% csrf_token %}
-    {{ form }}
-    <button> Войти </button>
-</form>
+{% extends 'base.html' %}
+{% block title %}Вход{% endblock %}
+
+{% block content %}
+<div style="max-width:400px; margin:0 auto;">
+    <div class="card">
+        <h1 style="margin-bottom:20px;">Вход</h1>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-group">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% if field.errors %}<div class="form-error">{{ field.errors }}</div>{% endif %}
+                </div>
+            {% endfor %}
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:10px;">Войти</button>
+        </form>
+        <p style="margin-top:15px; text-align:center;">Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p>
+    </div>
+</div>
+{% endblock %}

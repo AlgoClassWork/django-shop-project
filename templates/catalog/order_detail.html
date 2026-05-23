@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Заказ #{{ order.pk }}{% endblock %}
+
+{% block content %}
+<h1>Заказ #{{ order.pk }}</h1>
+<div class="card" style="margin-bottom:20px;">
+    <p><strong>Дата:</strong> {{ order.created_at|date:"d.m.Y H:i" }}</p>
+    <p><strong>Статус:</strong> <span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span></p>
+    <p><strong>Адрес доставки:</strong> {{ order.address }}</p>
+    <p><strong>Итого:</strong> {{ order.total_price }} ₽</p>
+</div>
+
+<h2>Состав заказа</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Товар</th>
+            <th>Кол-во</th>
+            <th>Цена</th>
+            <th>Сумма</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in order.items.all %}
+        <tr>
+            <td>
+                {% if item.product %}
+                    <a href="{% url 'product_detail' item.product.pk %}">{{ item.product.name }}</a>
+                {% else %}
+                    <em>Товар удалён</em>
+                {% endif %}
+            </td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.price }} ₽</td>
+            <td>{{ item.total }} ₽</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div style="margin-top:20px;">
+    <a href="{% url 'order_list' %}" class="btn btn-outline">← К списку заказов</a>
+</div>
+{% endblock %}

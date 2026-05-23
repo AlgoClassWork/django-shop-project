@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="card" style="display: flex; gap: 30px; flex-wrap: wrap;">
+    <div style="flex: 0 0 300px;">
+        {% if product.image %}
+            <img src="{{ product.image.url }}" style="width: 100%; border-radius: 8px;">
+        {% else %}
+            <div style="width: 100%; height: 300px; background: #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 60px;">📦</div>
+        {% endif %}
+    </div>
+    <div style="flex: 1; min-width: 250px;">
+        <p style="color: #999; font-size: 13px;">{{ product.category.name }}</p>
+        <h1 style="margin: 8px 0 15px;">{{ product.name }}</h1>
+
+        {% with avg=product.avg_rating %}
+            {% if avg %}
+                <div style="font-size: 15px; color: #f5a623; margin-bottom: 10px;">★ {{ avg }} / 5 ({{ product.reviews.count }} отзывов)</div>
+            {% endif %}
+        {% endwith %}
+
+        <div style="font-size: 28px; font-weight: bold; color: #e94560; margin-bottom: 15px;">{{ product.price }} ₽</div>
+        <p style="line-height: 1.6; color: #555; margin-bottom: 20px;">{{ product.description }}</p>
+
+        {% if product.stock > 0 %}
+            <p style="color: #2e7d32; margin-bottom: 15px;">✔ В наличии: {{ product.stock }} шт.</p>
+            <a href="{% url 'cart_add' product.pk %}" class="btn btn-primary">🛒 В корзину</a>
+        {% else %}
+            <p style="color: #dc3545;">✘ Нет в наличии</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Отзывы -->
+<h2 style="margin-top: 30px;">Отзывы</h2>
+
+{% for review in reviews %}
+<div class="card" style="margin-top: 15px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <strong>{{ review.author.username }}</strong>
+        <span style="color: #f5a623;">{{ review.rating }}★</span>
+    </div>
+    <p>{{ review.text }}</p>
+    <p style="color: #aaa; font-size: 12px; margin-top: 8px;">{{ review.created_at|date:"d.m.Y" }}</p>
+</div>
+{% empty %}
+<p style="color: #999; margin-top: 15px;">Отзывов пока нет.</p>
+{% endfor %}
+
+{% if user.is_authenticated and not user_reviewed %}
+<div class="card" style="margin-top: 20px;">
+    <h3 style="margin-bottom: 15px;">Оставить отзыв</h3>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in review_form %}
+            <div class="form-group">
+                {{ field.label_tag }}
+                {{ field }}
+                {% if field.errors %}<div class="form-error">{{ field.errors }}</div>{% endif %}
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Отправить</button>
+    </form>
+</div>
+{% elif user.is_authenticated and user_reviewed %}
+<p style="color: #999; margin-top: 20px;">Вы уже оставили отзыв.</p>
+{% else %}
+<p style="margin-top: 20px;"><a href="{% url 'login' %}">Войдите</a>, чтобы оставить отзыв.</p>
+{% endif %}
+{% endblock %}
